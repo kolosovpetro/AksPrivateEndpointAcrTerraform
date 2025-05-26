@@ -9,20 +9,11 @@ and this project adheres to [Semantic Versioning v2.0.0](https://semver.org/spec
 
 ### Changed
 
-- Update gitignore
-- Commit lock file
-- Move variable from locals
-- Git ignore txt files
-- Git ignore ssh keys
-- Update GitHub actions CI
-- Fix encoding and BOM characters
-- Azure pipelines for terraform
-- Add editorconfig
-- Remove example sas token
-- Remove json variables file
-- Add default values to tf variables
-- Fix encoding script
-- Add public key and password files mocks CI
-- Adopt naming conventions
-- Utilize azure naming module for terraform
-- Update gitignore and editorconfig
+- Provision VNET and AKS nodes subnet
+- Provision ACR with: `network_rule_set { default_action = "Deny" }` and `network_rule_bypass_option = "None"`
+- Provision Private endpoint inside AKS nodes subnet
+- Provision private DNS zone
+- Configure DNS record that points to private endpoint internal IP address
+- Link private DNS zone to VNET
+- Provision AKS cluster with nodes inside AKS subnet
+- Create ACR role assignment

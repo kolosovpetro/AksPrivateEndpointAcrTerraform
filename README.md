@@ -1,57 +1,53 @@
-# Terraform template
+# AKS with ACR integration using Private endpoints and Terraform
 
-Terraform template for modules and submodules.
-Includes pre-commit hooks that lint the terraform code and generate module's
-documentation as part of README file.
-Contains examples of terraform CI/CD pipelines for GitHub Actions and Azure Pipelines.
+This project provisions a secure Azure Kubernetes Service (AKS) cluster integrated with a private Azure Container
+Registry (ACR) using private endpoints and DNS zone configuration. All components are deployed with restricted network
+access for enhanced security.
 
-## Azure naming conventions
+## DNS Resolve output
 
-- [Define your naming convention](https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-naming)
-- [Azure naming module](https://registry.terraform.io/modules/Azure/naming/azurerm/latest)
+![output](./images/pwsh_MdxVWwUqxg.png)
+![portal](./images/msedge_JLTR8hP0cH.png)
 
-## Terraform Init
+## Features
 
-- Create and configure Azure Storage Account for Terraform state
-- Create `azure.sas.conf` file with the following content:
-    ```bash
-    storage_account_name = "storage_account_name"
-    container_name       = "container_name"
-    key                  = "terraform.tfstate"
-    sas_token            = "sas_token"
-    ```
-- `terraform init -backend-config="azure.sas.conf" -reconfigure -upgrade`
+- Creates a Virtual Network (VNet) with dedicated subnets
+- Deploys an Azure Container Registry (ACR) with public network access disabled
+- Configures a Private Endpoint for the ACR in the AKS subnet
+- Sets up a Private DNS Zone (`privatelink.azurecr.io`) and links it to the VNet
+- Adds DNS record pointing to the ACR Private Endpoint IP
+- Deploys AKS cluster with nodes in the private subnet
+- Integrates AKS with ACR using RBAC role assignments
 
-## Module referencing
+### For AKS to pull images from ACR:
 
-- Bitbucket SSH: `git::git@bitbucket.org:kolosovpetro/terraform.git//modules/storage`
-- Github SSH: `git::git@github.com:kolosovpetro/terraform.git//modules/storage`
-- Github HTTP: `github.com/kolosovpetro/AzureLinuxVMTerraform.git//modules/ubuntu-vm-key-auth-no-pip?ref=master`
+The AKS kubelet identity must have the following role assignment:
 
-## Pre-commit configuration
+- **AcrPull** role on the ACR
 
-- Install python3 via Windows Store
-- `pip install --upgrade pip`
-- `pip install pre-commit`
-- Update PATH variable
-- `pre-commit install`
+This role assignment is automatically created by this Terraform.
 
-### Install terraform docs
+## Deployment Notes
 
-- `choco install terraform-docs`
+- ACR is provisioned with `network_rule_set` default action set to `Deny` and no bypass rules.
+- A private endpoint is created inside the AKS subnet and a corresponding DNS record is registered in the private DNS
+  zone.
+- Public network access to ACR is disabled.
+- Only resources within the same VNet (AKS subnet) can access the ACR.
+- AKS uses a system-assigned managed identity or a user-assigned identity, which is granted `AcrPull` access.
 
-### Install tflint
+### Deployment order
 
-- `choco install tflint`
+- Provision VNET and AKS nodes subnet
+- Provision ACR with private access only
+- Private endpoint in AKS subnet
+- Private DNS zone creation and link to VNET
+- DNS record for ACR Private Endpoint
+- AKS cluster deployment with node pool in subnet
+- ACR pull access role assignment for AKS identity
 
-### Documentation
+## Modules
 
-- https://github.com/antonbabenko/pre-commit-terraform
-- https://github.com/kolosovpetro/AzureTerraformBackend
-- https://github.com/terraform-docs/terraform-docs
-- https://terraform-docs.io/user-guide/installation/
-- https://pre-commit.com/
-
-## Deploy storage account for terraform state
-
-- See [CreateAzureStorageAccount.ps1](./CreateAzureStorageAccount.ps1)
+- https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_registry
+- https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/subnet_network_security_group_association
+- https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/kubernetes_cluster
