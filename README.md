@@ -1,4 +1,4 @@
-# AKS with Private endpoints ACR integration using Terraform
+# AKS with ACR integration using Private endpoints and Terraform
 
 This project provisions a secure Azure Kubernetes Service (AKS) cluster integrated with a private Azure Container
 Registry (ACR) using private endpoints and DNS zone configuration. All components are deployed with restricted network
