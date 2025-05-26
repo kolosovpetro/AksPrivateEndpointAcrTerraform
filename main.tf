@@ -6,8 +6,8 @@ data "azurerm_subscription" "current" {}
 #################################################################################################################
 
 locals {
-  vnet_cidr           = ["10.10.0.0/24"]
-  acr_subnet_cidr     = ["10.10.0.0/25"]
+  vnet_cidr       = ["10.10.0.0/24"]
+  aks_subnet_cidr = ["10.10.0.0/25"]
 }
 
 #################################################################################################################
@@ -35,7 +35,7 @@ resource "azurerm_subnet" "aks" {
   name                 = "snet-aks-${var.prefix}"
   resource_group_name  = azurerm_resource_group.public.name
   virtual_network_name = azurerm_virtual_network.public.name
-  address_prefixes     = local.acr_subnet_cidr
+  address_prefixes     = local.aks_subnet_cidr
 }
 
 #################################################################################################################
@@ -49,7 +49,10 @@ resource "azurerm_container_registry" "acr" {
   sku                           = "Premium"
   admin_enabled                 = false
   public_network_access_enabled = false
-  network_rule_bypass_option    = "None" #allow trusted Azure services to access a network restricted Container Registry
+
+  #(Optional) Whether to allow trusted Azure services to access a network restricted Container Registry?
+  # Possible values are None and AzureServices. Defaults to AzureServices
+  network_rule_bypass_option = "None"
 
   network_rule_set {
     default_action = "Deny"
@@ -130,33 +133,6 @@ resource "azurerm_kubernetes_cluster" "aks" {
     network_plugin = "azure"
     network_policy = "azure"
   }
-}
-
-resource "azurerm_network_security_group" "aks_block_egress" {
-  name                = "aks-egress-deny"
-  resource_group_name = azurerm_resource_group.public.name
-  location            = azurerm_resource_group.public.location
-
-  security_rule {
-    name                       = "deny-egress-all"
-    priority                   = 100
-    direction                  = "Outbound"
-    access                     = "Deny"
-    protocol                   = "*"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefix      = "*"
-    destination_address_prefix = "Internet"
-  }
-}
-
-resource "azurerm_subnet_network_security_group_association" "aks" {
-  subnet_id                 = azurerm_subnet.aks.id
-  network_security_group_id = azurerm_network_security_group.aks_block_egress.id
-
-  depends_on = [
-    azurerm_kubernetes_cluster.aks
-  ]
 }
 
 data "azurerm_kubernetes_cluster" "aks" {
